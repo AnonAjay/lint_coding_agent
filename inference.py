@@ -97,7 +97,7 @@ def main() -> None:
             action_text = (completion.choices[0].message.content or "").strip()
             
             # Take Step
-            result = env.step(LintCodingAgentAction(message=action_text))
+            result = env.step(LintCodingAgentAction( code_solution=msg, explanation="Fixing syntax for level clearance."))
             
             reward = result.reward or 0.0
             log_step(step=step, action=action_text, reward=reward, done=result.done, error=None)
