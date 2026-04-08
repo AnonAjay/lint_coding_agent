@@ -33,57 +33,61 @@ import os
 import argparse
 import uvicorn
 
-# --- PATH INJECTION BLOCK ---
-# Get the absolute path of the directory containing this file (server/)
+# --- ROBUST PATH INJECTION ---
+# This ensures that whether the server is run from the root or the /server folder,
+# it can always find models.py and the environment class.
 current_dir = os.path.dirname(os.path.abspath(__file__))
-# Get the project root directory
-project_root = os.path.dirname(current_dir)
+project_root = os.path.abspath(os.path.join(current_dir, ".."))
 
-# Add both to sys.path to cover all import styles
-if current_dir not in sys.path:
-    sys.path.append(current_dir)
-if project_root not in sys.path:
-    sys.path.append(project_root)
-# ----------------------------
+for path in [current_dir, project_root]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+# Debug: Print path in logs so we can see what the container sees
+print(f"DEBUG: Python Path is {sys.path}")
 
 try:
-    from openenv.core.env_server.http_server import create_app
+    # Use the specific OpenEnv factory method
+    from openenv.core.server import create_app
 except ImportError:
-    raise ImportError("openenv-core is not installed. Run 'uv sync'.")
-
-# Try imports with absolute certainty
-try:
-    # If models.py is in the root
-    from models import LintCodingAgentAction, LintCodingAgentObservation
-    # If environment is in the same folder as app.py
-    from lint_coding_agent_environment import LintCodingAgentEnvironment
-except ImportError:
+    # Fallback for different library versions
     try:
-        # Fallback for structured package
-        from lint_coding_agent.models import LintCodingAgentAction, LintCodingAgentObservation
-        from lint_coding_agent.server.lint_coding_agent_environment import LintCodingAgentEnvironment
-    except ImportError as e:
-        print(f"CRITICAL IMPORT ERROR: {e}")
-        print(f"Python Path: {sys.path}")
+        from openenv.core.env_server.http_server import create_app
+    except ImportError:
+        print("CRITICAL: 'openenv' library not found in environment.")
         raise
 
-# Create the app
+# Absolute Import Attempts
+try:
+    from models import LintCodingAgentAction, LintCodingAgentObservation
+    from server.lint_coding_agent_environment import LintCodingAgentEnvironment
+except ImportError as e:
+    print(f"IMPORT WARNING: Standard imports failed, trying relative... Error: {e}")
+    try:
+        from .lint_coding_agent_environment import LintCodingAgentEnvironment
+        # If models is in root and we are in server/, we need '..'
+        sys.path.append(project_root)
+        from models import LintCodingAgentAction, LintCodingAgentObservation
+    except ImportError as final_e:
+        print(f"CRITICAL: All import attempts failed. {final_e}")
+        raise
+
+# --- APP INITIALIZATION ---
+# env_name must match the name in your openenv.yaml
 app = create_app(
     LintCodingAgentEnvironment,
     LintCodingAgentAction,
     LintCodingAgentObservation,
-    env_name="lint_coding_agent",
-    max_concurrent_envs=1,
 )
 
 def main():
-    """Standardized entry point for OpenEnv validation."""
+    """Entry point for local testing and Docker execution."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     
-    print(f"Starting server on {args.host}:{args.port}")
+    print(f"Starting OpenEnv Server on {args.host}:{args.port}")
     uvicorn.run(app, host=args.host, port=args.port)
 
 if __name__ == "__main__":
