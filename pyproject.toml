@@ -1,0 +1,41 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openenv-lint_coding_agent"
+version = "0.1.0"
+description = "A progressive 20-level learning environment for AI Coding Agents."
+requires-python = ">=3.10"
+dependencies = [
+    "openenv-core[core]>=0.2.2",
+    "pydantic>=2.0.0",
+    "numpy>=1.24.0",
+    # Specific for a Coding Agent Environment
+    "black>=23.0.0",   # For programmatic linting/formatting checks
+    "uvicorn>=0.22.0",
+    "fastapi>=0.100.0",
+    "python-dotenv>=1.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+# Server entry point
+server = "lint_coding_agent.server.app:main"
+
+[tool.setuptools]
+include-package-data = true
+# Ensure the packages are correctly mapped to your directory structure
+packages = ["lint_coding_agent", "lint_coding_agent.server"]
+package-dir = { "lint_coding_agent" = ".", "lint_coding_agent.server" = "server" }

@@ -1,0 +1,2 @@
+[console_scripts]
+server = lint_coding_agent.server.app:main
