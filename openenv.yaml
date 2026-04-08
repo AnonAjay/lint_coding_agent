@@ -4,3 +4,13 @@ type: space
 runtime: fastapi
 app: server.app:app
 port: 8000
+tasks:
+  - id: syntax-fix-lvl1
+    name: "Basic Syntax Error"
+    difficulty: "easy"
+  - id: logic-fix-lvl2
+    name: "Relative Import Resolution"
+    difficulty: "medium"
+  - id: pattern-fix-lvl3
+    name: "PEP8 Compliance & Logic"
+    difficulty: "hard"
