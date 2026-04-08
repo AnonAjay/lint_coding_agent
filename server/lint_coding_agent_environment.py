@@ -31,44 +31,52 @@ class LintCodingAgentEnvironment(Environment):
     SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
     def __init__(self):
+        # Initialize internal state using OpenEnv's State object
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self.level = 1
         self.max_levels = 20
 
     def reset(self) -> LintCodingAgentObservation:
+        """Reset the environment to the first level."""
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self.level = 1
         return self._get_observation("Environment ready! Resolve Level 1.", 0.0, False)
 
     def step(self, action: LintCodingAgentAction) -> LintCodingAgentObservation:
+        """Process the agent's code solution and return a strict observation."""
         self._state.step_count += 1
         
         # 1. GET CURRENT TASK
         goal = CURRICULUM.get(self.level, CURRICULUM[1])
         
         # 2. THE GRADER 
-        # Note: We use 'code_solution' as defined in your newest LintCodingAgentAction model
+        # Accessing 'code_solution' and 'explanation' from your strict Action model
         solution = action.code_solution
+        explanation = action.explanation
+        
+        # Case-insensitive check for the required fix keyword
         is_correct = goal["ans"].lower() in solution.lower()
         
-        # 3. MEANINGFUL REWARD
+        # 3. REWARD LOGIC
         if is_correct:
             reward = 1.0
             self.level += 1
-            feedback = f"Correct! Level {self.level - 1} cleared."
+            feedback = f"Correct! Level {self.level - 1} cleared. Reasoning noted: {explanation}"
         else:
             reward = -0.1
             feedback = f"Incorrect. Retry Level {self.level}. Hint: {goal['task']}"
 
         # 4. DONE CRITERIA
+        # Finish if max levels hit or if the agent explicitly quits
         done = self.level > self.max_levels or "QUIT" in solution.upper()
 
         return self._get_observation(feedback, reward, done)
 
     def _get_observation(self, feedback: str, reward: float, done: bool) -> LintCodingAgentObservation:
+        """Helper to package internal state into the Pydantic Observation model."""
         goal = CURRICULUM.get(self.level, CURRICULUM[1])
         
-        # We must populate EVERY field defined in your LintCodingAgentObservation model
+        # This MUST match the fields in your LintCodingAgentObservation exactly
         return LintCodingAgentObservation(
             level=self.level,
             language=goal["lang"],
@@ -77,7 +85,10 @@ class LintCodingAgentEnvironment(Environment):
             last_test_results=feedback,
             reward=reward,
             done=done,
-            metadata={"step": self._state.step_count}
+            metadata={
+                "step": self._state.step_count,
+                "episode_id": self._state.episode_id
+            }
         )
 
     @property
