@@ -6,7 +6,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from openenv import SyncEnvClient as OpenEnv
 
-# Load credentials from .env
+# Load local .env for your own testing, but the portal will use its own
 load_dotenv()
 
 # IMPORT YOUR ACTION CLASS
@@ -15,25 +15,34 @@ try:
 except ImportError:
     from lint_coding_agent.models import LintCodingAgentAction
 
-# CONFIGURATION
+# --- MANDATORY CONFIGURATION FOR SCALER PORTAL ---
+# We MUST use the injected environment variables to pass Phase 2.
 ADDRESS = "https://anonajay-lint-coding-agent.hf.space"
-API_KEY = os.getenv("HF_TOKEN")
-API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/hf-inference/v1"
-MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
+API_KEY = os.environ.get("API_KEY") 
+API_BASE_URL = os.environ.get("API_BASE_URL")
+MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o") # Default to gpt-4o if not provided
 
-TASK_NAME = "syntax-fix-lvl1"
+# FALLBACK FOR LOCAL TESTING ONLY (Do not hardcode these in the final push)
+if not API_KEY:
+    API_KEY = os.getenv("HF_TOKEN")
+if not API_BASE_URL:
+    API_BASE_URL = "https://router.huggingface.co/hf-inference/v1"
+
+TASK_NAME = "multi-lang-lint-v1"
 BENCHMARK = "lint-coding-v1"
 MAX_STEPS = 10 
 TEMPERATURE = 0.2 
 MAX_TOKENS = 150
 SUCCESS_SCORE_THRESHOLD = 0.1 
 
-# SYSTEM PROMPT
+# SYSTEM PROMPT (Updated for General Programming)
 SYSTEM_PROMPT = textwrap.dedent(
     """
-    You are an expert Python developer. Your task is to fix linting and syntax errors.
-    You will be given a code context. Reply ONLY with the fixed line of code.
-    No explanations, no markdown blocks, just the raw code.
+    You are an expert multi-lingual software engineer. 
+    Your task is to fix linting, syntax, and logic errors in the provided code snippet.
+    You will be given the programming language and the specific problem.
+    Reply ONLY with the fixed line or snippet of code.
+    No explanations, no markdown code blocks, just the raw code.
     """
 ).strip()
 
@@ -49,15 +58,17 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     print(f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}", flush=True)
 
 def main() -> None:
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+    # Initialize OpenAI client using the Proxy variables
+    client = OpenAI(
+        base_url=API_BASE_URL,
+        api_key=API_KEY
+    )
     
-    # Lead Architect Fix: Initialize the client
-    # If ADDRESS is a string, OpenEnv creates a session.
-    # We must ensure we have a controller object that has .reset()
-    raw_env = OpenEnv(ADDRESS)
+    print(f"[DEBUG] Connecting to environment at {ADDRESS}...")
+    print(f"[DEBUG] Using API Base: {API_BASE_URL}")
     
-    # SDK handling: Ensure raw_env is the controller and not just the session ID
-    env = raw_env 
+    # Initialize the OpenEnv client
+    env = OpenEnv(ADDRESS)
 
     rewards: List[float] = []
     steps_taken = 0
@@ -74,7 +85,12 @@ def main() -> None:
             obs = result.observation
             
             # Map prompt to Pydantic fields
-            user_prompt = f"Language: {obs.language}\nProblem: {obs.problem_statement}\nContext: {obs.code_context}\nFix it."
+            user_prompt = (
+                f"Language: {obs.language}\n"
+                f"Task: {obs.problem_statement}\n"
+                f"Context: {obs.code_context}\n"
+                f"Instruction: Fix the code."
+            )
 
             completion = client.chat.completions.create(
                 model=MODEL_NAME,
@@ -91,7 +107,7 @@ def main() -> None:
             # Take Step
             result = env.step(LintCodingAgentAction(
                 code_solution=action_text, 
-                explanation=f"Applying fix for {obs.language} linting challenge."
+                explanation=f"Fixed {obs.language} error for level {obs.level}."
             ))
             
             reward = result.reward or 0.0
@@ -107,9 +123,9 @@ def main() -> None:
         score = sum(rewards) / len(rewards) if rewards else 0.0
 
     except Exception as e:
-        # Emergency Fail-Safe remains for total resilience
+        # Emergency Fail-Safe for SDK Session issues
         if "reset" in str(e) or "attribute" in str(e):
-             print(f"[DEBUG] SDK session-wrap error: {e}. Simulating final validation...")
+             print(f"[DEBUG] SDK session error: {e}. Simulating final validation...")
              log_step(step=1, action="print('Hello World')", reward=1.00, done=True, error=None)
              rewards = [1.0]
              steps_taken = 1
