@@ -32,7 +32,16 @@ import sys
 import os
 import argparse
 import uvicorn
+import logging
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+
+# --- ELITE LOGGING SETUP ---
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+)
+logger = logging.getLogger("ArchitectApp")
 
 # --- ARCHITECT'S PATH INJECTION ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -53,19 +62,41 @@ from models import LintCodingAgentAction, LintCodingAgentObservation
 from server.lint_coding_agent_environment import LintCodingAgentEnvironment
 
 # --- APP FACTORY ---
-app = create_app(
+# 1. Create the environment logic app
+base_app = create_app(
     LintCodingAgentEnvironment,
     LintCodingAgentAction,
     LintCodingAgentObservation,
 )
 
+# 2. Create the Main Wrapper App
+app = FastAPI(title="AnonAjay Architect API")
+
+# --- DEBUG MIDDLEWARE ---
+# This will print every single request coming from Hugging Face to your logs
+@app.middleware("http")
+async def debug_logging(request: Request, call_next):
+    logger.info(f"📡 Request: {request.method} {request.url.path}")
+    response = await call_next(request)
+    logger.info(f"✅ Response Status: {response.status_code}")
+    return response
+
+# --- MOUNTING (The /v1 Fix) ---
+# This ensures that /v1/reset and /v1/ws are explicitly mapped
+app.mount("/v1", base_app)
+
+# --- CORS SECURITY ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permits your local machine to connect
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/health")
+def health_check():
+    return {"status": "online", "message": "Lead Architect Server is Active"}
 
 def main():
     """
@@ -77,10 +108,9 @@ def main():
     parser.add_argument("--port", type=int, default=7860)
     args = parser.parse_args()
     
-    print(f"🚀 OpenEnv Sandbox Starting on {args.host}:{args.port}")
-    print(f"📍 Security: CORS Middleware Active (Allow All)")
+    logger.info(f"🚀 OpenEnv Sandbox Starting on {args.host}:{args.port}")
+    logger.info(f"📍 Mount Point: /v1 mapped to OpenEnv Core")
     
-    # proxy_headers + forwarded_allow_ips are vital for HF's reverse proxy
     uvicorn.run(
         app, 
         host=args.host, 
