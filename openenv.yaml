@@ -3,7 +3,7 @@ name: lint_coding_agent
 type: space
 runtime: fastapi
 app: server.app:app
-port: 8000
+port: 7860
 tasks:
   - id: syntax-fix-lvl1
     name: "Basic Syntax Error"

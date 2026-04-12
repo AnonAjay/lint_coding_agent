@@ -1,32 +1,5 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree.
-
-"""
-FastAPI application for the Lint Coding Agent Environment.
-
-This module creates an HTTP server that exposes the LintCodingAgentEnvironment
-over HTTP and WebSocket endpoints, compatible with EnvClient.
-
-Endpoints:
-    - POST /reset: Reset the environment
-    - POST /step: Execute an action
-    - GET /state: Get current environment state
-    - GET /schema: Get action/observation schemas
-    - WS /ws: WebSocket endpoint for persistent sessions
-
-Usage:
-    # Development (with auto-reload):
-    uvicorn server.app:app --reload --host 0.0.0.0 --port 8000
-
-    # Production:
-    uvicorn server.app:app --host 0.0.0.0 --port 8000 --workers 4
-
-    # Or run directly:
-    python -m server.app
-"""
 
 import sys
 import os
@@ -35,6 +8,7 @@ import uvicorn
 import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 # --- ELITE LOGGING SETUP ---
 logging.basicConfig(
@@ -47,7 +21,8 @@ logger = logging.getLogger("ArchitectApp")
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 
-for path in [project_root, current_dir]:
+# Injecting all possible roots for the module loader
+for path in [project_root, current_dir, os.getcwd()]:
     if path not in sys.path:
         sys.path.insert(0, path)
 
@@ -62,30 +37,41 @@ from models import LintCodingAgentAction, LintCodingAgentObservation
 from server.lint_coding_agent_environment import LintCodingAgentEnvironment
 
 # --- APP FACTORY ---
-# 1. Create the environment logic app
+# 1. Create the internal engine
 base_app = create_app(
     LintCodingAgentEnvironment,
     LintCodingAgentAction,
     LintCodingAgentObservation,
 )
 
-# 2. Create the Main Wrapper App
-app = FastAPI(title="AnonAjay Architect API")
+# 2. Main Wrapper - Crucial config for Hugging Face UI restoration
+app = FastAPI(
+    title="AnonAjay Architect API",
+    description="Meta x HF Hackathon: Multi-Lang Lint Coding Agent",
+    version="1.0.0",
+    redirect_slashes=False, # KILLER FIX: Prevents 307 loops that hide the UI
+    docs_url="/docs",       # Direct UI access
+    openapi_url="/openapi.json"
+)
 
-# --- DEBUG MIDDLEWARE ---
-# This will print every single request coming from Hugging Face to your logs
+# --- DEBUG TELEMETRY ---
 @app.middleware("http")
 async def debug_logging(request: Request, call_next):
-    logger.info(f"📡 Request: {request.method} {request.url.path}")
+    logger.info(f"📡 Incoming: {request.method} {request.url.path}")
     response = await call_next(request)
-    logger.info(f"✅ Response Status: {response.status_code}")
+    logger.info(f"✅ Outcome: {response.status_code}")
     return response
 
-# --- MOUNTING (The /v1 Fix) ---
-# This ensures that /v1/reset and /v1/ws are explicitly mapped
+# --- MOUNTING STRATEGY ---
+@app.get("/v1")
+async def v1_root():
+    """Explicitly defined to prevent 404s on the mount root."""
+    return {"message": "OpenEnv API v1 is active", "ui": "/v1/docs"}
+
+# Mount the OpenEnv core
 app.mount("/v1", base_app)
 
-# --- CORS SECURITY ---
+# --- CORS & INFRASTRUCTURE ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -96,25 +82,25 @@ app.add_middleware(
 
 @app.get("/health")
 def health_check():
-    return {"status": "online", "message": "Lead Architect Server is Active"}
+    return {"status": "online", "engine": "LintCodingAgent", "port": 7860}
+
+@app.get("/")
+def home():
+    """Automatically redirect root visitors to the documentation."""
+    return RedirectResponse(url="/v1/docs")
 
 def main():
-    """
-    Entry point for the OpenEnv Server.
-    Standardized to port 7860 for Hugging Face deployment.
-    """
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=7860)
-    args = parser.parse_args()
+    """Hugging Face Entry Point."""
+    # Standard HF Spaces use port 7860
+    port = int(os.environ.get("PORT", 7860))
     
-    logger.info(f"🚀 OpenEnv Sandbox Starting on {args.host}:{args.port}")
-    logger.info(f"📍 Mount Point: /v1 mapped to OpenEnv Core")
+    logger.info(f"🚀 Lead Architect Server spinning up on port {port}")
+    logger.info(f"📍 Docs available at: https://anonajay-lint-coding-agent.hf.space/v1/docs")
     
     uvicorn.run(
         app, 
-        host=args.host, 
-        port=args.port, 
+        host="0.0.0.0", 
+        port=port, 
         proxy_headers=True, 
         forwarded_allow_ips="*"
     )

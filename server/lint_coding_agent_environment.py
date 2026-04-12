@@ -1,15 +1,5 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
-#
-# This source code is licensed under the BSD-style license found in the
-# LICENSE file in the root directory of this source tree.
-
-"""
-Lint Coding Agent Environment Implementation.
-
-A simple test environment that echoes back messages sent to it.
-Perfect for testing HTTP server infrastructure.
-"""
 
 import json
 import os
@@ -22,7 +12,8 @@ from typing import Tuple, Dict, Any, List
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
-# Setup Logging for the Logic Engine
+# Lead Architect Telemetry
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("ArchitectEnvironment")
 
 # --- ABSOLUTE IMPORT FIX ---
@@ -34,7 +25,7 @@ except ImportError:
 class LintCodingAgentEnvironment(Environment):
     """
     Advanced Repository Sandbox. 
-    Handles VFS synchronization for 15 levels with real-time debug telemetry.
+    Enhanced with Deep Path Discovery to eliminate Docker 'File Not Found' errors.
     """
     SUPPORTS_CONCURRENT_SESSIONS: bool = True
 
@@ -44,40 +35,65 @@ class LintCodingAgentEnvironment(Environment):
         self.failed_queue = []
         self.vfs: Dict[str, str] = {}
         
-        # --- DYNAMIC PATH RESOLUTION ---
-        self.current_dir = os.path.dirname(os.path.abspath(__file__))
-        json_path = os.path.join(self.current_dir, "QUESTIONS.json")
-        self.templates_base = os.path.join(self.current_dir, "templates")
+        # --- ELITE DEEP RESOURCE DISCOVERY ---
+        # We don't guess paths; we find them.
+        json_path = self._discover_resource("QUESTIONS.json")
         
-        logger.info(f"🏗️ Initializing Environment Logic from: {self.current_dir}")
-        
-        try:
-            with open(json_path, "r") as f:
-                self.curriculum = json.load(f)
-            self.all_levels = sorted(list(self.curriculum.keys()), key=int)
-            logger.info(f"📚 Curriculum Loaded: {len(self.all_levels)} levels found.")
-        except Exception as e:
-            logger.error(f"❌ CRITICAL DATA ERROR: {e}")
-            self.curriculum = {"1": {"lang": "Python", "task": "Fallback: Init", "template_dir": "level_1", "ans": "print"}}
-            self.all_levels = ["1"]
+        if json_path:
+            logger.info(f"🎯 Resource Secured: {json_path}")
+            self.templates_base = os.path.join(os.path.dirname(json_path), "templates")
+            try:
+                with open(json_path, "r") as f:
+                    self.curriculum = json.load(f)
+                self.all_levels = sorted(list(self.curriculum.keys()), key=int)
+                logger.info(f"📚 Curriculum Validated: {len(self.all_levels)} levels loaded.")
+            except Exception as e:
+                logger.error(f"❌ Read Failure on QUESTIONS.json: {e}")
+                self._apply_fallback()
+        else:
+            logger.error("❌ CRITICAL: Manifest QUESTIONS.json missing from all search roots.")
+            self._apply_fallback()
         
         self.max_levels = int(self.all_levels[-1]) if self.all_levels else 1
 
+    def _discover_resource(self, filename: str) -> str:
+        """Scans standard Docker and local roots to locate critical engine files."""
+        # Order of search: Current Dir -> Env Root -> App Root -> Explicit Docker Path
+        roots = [
+            os.path.dirname(os.path.abspath(__file__)),
+            os.getcwd(),
+            "/app/env/server",
+            "/app/env",
+            "/app"
+        ]
+        
+        for root in roots:
+            candidate = os.path.join(root, filename)
+            if os.path.exists(candidate):
+                return candidate
+        return None
+
+    def _apply_fallback(self):
+        """Prevents server crash by providing a baseline Level 1."""
+        self.curriculum = {"1": {"lang": "Python", "task": "Fallback: Init", "template_dir": "level_1", "ans": "print"}}
+        self.all_levels = ["1"]
+        self.templates_base = os.path.join(os.getcwd(), "templates")
+
     def reset(self) -> LintCodingAgentObservation:
         """Full state reset for Phase 2 scoring."""
-        logger.info("🔄 Resetting Environment State...")
+        logger.info("🔄 Resetting Sandbox State...")
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self.level = 1
         self.failed_queue = []
         return self._load_template_state("Environment Reset: 15-Level Sprint Initialized.")
 
     def _load_template_state(self, msg: str) -> LintCodingAgentObservation:
-        """Loads physical files into the VFS with debug tracking."""
+        """Loads physical files into the VFS with rigorous logging."""
         task_data = self.curriculum.get(str(self.level), {})
         template_dir_name = task_data.get("template_dir", f"level_{self.level}")
         template_path = os.path.join(self.templates_base, template_dir_name)
         
-        logger.info(f"📂 Loading Template for Level {self.level}: {template_path}")
+        logger.info(f"📂 VFS Switch | Level {self.level} | Root: {template_path}")
         
         self.vfs = {}
         if os.path.exists(template_path):
@@ -88,19 +104,19 @@ class LintCodingAgentEnvironment(Environment):
                     try:
                         with open(full_p, 'r', encoding='utf-8') as file:
                             self.vfs[rel_p] = file.read()
-                        logger.info(f"  📄 VFS Mounted: {rel_p}")
+                        logger.info(f"  📄 File Mounted: {rel_p}")
                     except Exception as e:
-                        logger.error(f"  ⚠️ VFS Read Error {rel_p}: {e}")
+                        logger.error(f"  ⚠️ Read Warning {rel_p}: {e}")
         else:
-            logger.error(f"❌ CRITICAL: Level path missing: {template_path}")
+            logger.error(f"❌ Directory Missing: {template_path}")
             
         return self._get_observation(msg, 0.0, False)
 
     def _check_hijacking(self, action: LintCodingAgentAction) -> Tuple[bool, str, float]:
-        """Anti-adversarial monitor to prevent agent shortcuts."""
+        """Enforces architectural integrity."""
         new_code = action.code_solution or ""
         if len(new_code.strip()) < 10:
-             return True, "HIJACK: Solution rejected for insufficient depth.", -2.0
+             return True, "HIJACK: Solution rejected (insufficient depth).", -2.0
         
         code_only = re.sub(r'#.*', '', new_code).strip()
         if len(code_only) < 5:
@@ -109,14 +125,14 @@ class LintCodingAgentEnvironment(Environment):
         return False, "", 0.0
 
     def _is_syntactically_valid(self, code: str, lang: str) -> Tuple[bool, str]:
-        """Verifies solution validity based on language type."""
+        """Structural validation using AST."""
         if lang.lower() == "python":
             try:
                 ast.parse(code)
                 return True, "Syntax Valid"
             except SyntaxError as e:
-                return False, f"SyntaxError: {e.msg} (Line {e.lineno})"
-        return (True, "Non-Python/No-Verify") if len(code) > 5 else (False, "Empty Solution")
+                return False, f"SyntaxError: {e.msg}"
+        return (True, "Non-Python") if len(code) > 5 else (False, "Empty")
 
     def step(self, action: LintCodingAgentAction) -> LintCodingAgentObservation:
         self._state.step_count += 1
@@ -124,36 +140,33 @@ class LintCodingAgentEnvironment(Environment):
         
         logger.info(f"👣 STEP {self._state.step_count} | Level: {self.level}")
 
-        # 1. Monitoring
+        # 1. Integrity Check
         is_hijacked, hijack_msg, penalty = self._check_hijacking(action)
         if is_hijacked:
             logger.warning(f"🚫 {hijack_msg}")
             return self._get_observation(hijack_msg, penalty, False)
 
-        # 2. Execution & Verification
+        # 2. Evaluation Logic
         syntax_ok, error_msg = self._is_syntactically_valid(action.code_solution, task_data["lang"])
         
         if not syntax_ok:
             reward = -0.2
             feedback = f"Transition Failed: {error_msg}"
-            logger.info(f"❌ Syntax Invalid: {error_msg}")
         else:
-            # Check logic against the 'ans' substring in manifest
+            # Check logic against manifest 'ans'
             logic_ok = task_data["ans"].lower() in action.code_solution.lower()
             
             if logic_ok:
                 reward = 1.0
                 feedback = f"Level {self.level} Success."
-                logger.info(f"✅ Success! Solution matches '{task_data['ans']}'")
+                logger.info("✅ Verification Passed.")
                 self.level += 1
             else:
                 reward = 0.1
                 feedback = f"Syntax OK | Logic Missing: {task_data['task']}"
-                logger.info(f"⚠️ Logic Mismatch. Expected logic containing: '{task_data['ans']}'")
                 if str(self.level) not in self.failed_queue:
                     self.failed_queue.append(str(self.level))
 
-        # 3. Handle Progression
         done = self.level > self.max_levels
         
         if not done and reward > 0.8:
@@ -168,16 +181,12 @@ class LintCodingAgentEnvironment(Environment):
         return LintCodingAgentObservation(
             level=self.level,
             language=task_data["lang"],
-            problem_statement=f"{feedback} | Current Task: {task_data['task']}",
+            problem_statement=f"{feedback} | Task: {task_data['task']}",
             code_context=json.dumps(self.vfs), 
             last_test_results=feedback,
             reward=reward,
             done=done,
-            metadata={
-                "step": self._state.step_count,
-                "vfs_files": list(self.vfs.keys()),
-                "total_levels": self.max_levels
-            }
+            metadata={"step": self._state.step_count, "vfs_files": list(self.vfs.keys())}
         )
 
     @property
