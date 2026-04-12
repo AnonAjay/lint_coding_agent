@@ -1,0 +1,7 @@
+{
+  "services": ["database", "backend_api", "frontend_ui"],
+  "dependencies": {
+    "backend_api": ["database"],
+    "frontend_ui": ["backend_api"]
+  }
+}

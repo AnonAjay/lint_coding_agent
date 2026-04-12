@@ -1,0 +1,9 @@
+{
+  "tools": [
+    {
+      "name": "get_weather",
+      "parameters": {"location": "string"},
+      "description": "Returns current weather metrics including storm_risk (0-100)."
+    }
+  ]
+}

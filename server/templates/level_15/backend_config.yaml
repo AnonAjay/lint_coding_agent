@@ -1,0 +1,8 @@
+# BROKEN: The SUPABASE_URL is missing, which causes the API deployment tool to crash.
+service: backend_api
+runtime: nodejs20
+env_vars:
+  - name: PORT
+    value: 8080
+  - name: SUPABASE_URL
+    value: ""  # <--- AGENT MUST FIX THIS

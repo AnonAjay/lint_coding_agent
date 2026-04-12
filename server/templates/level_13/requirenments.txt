@@ -1,0 +1,1 @@
+openai==1.3.0  # Note the version: this forces the break
