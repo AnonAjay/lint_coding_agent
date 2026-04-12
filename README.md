@@ -1,4 +1,4 @@
-<div align="center">
+<div>
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=Lint%20Coding%20Agent&fontSize=70&animation=fadeIn&fontAlignY=35" width="100%" />
 
@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Maintained%3F-yes-2ea44f?style=for-the-badge" />
   <img src="https://img.shields.io/badge/PRs-welcome-orange?style=for-the-badge&logo=github" />
 </p>
-
+<div>
 ### ⚡ Autonomous Software Engineering Sandbox
 *Training agents to navigate codebases, one level at a time.*
 
