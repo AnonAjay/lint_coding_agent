@@ -10,21 +10,57 @@ base_path: /web
 tags:
   - openenv
 ---
-Here is the complete, high-impact code for your README.md. It combines the animated waving header, the interactive badges, your original technical documentation, and the visual "motion" elements into one seamless file.
 
-Markdown
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=Lint%20Coding%20Agent&fontSize=70&animation=fadeIn&fontAlignY=35" width="100%" />
+
+<p align="center">
+  <img src="https://img.shields.io/badge/System_Status-Running-31c854?style=for-the-badge&logo=statuspage&logoColor=white" />
+  <img src="https://img.shields.io/badge/Sandbox-Docker-2496ed?style=for-the-badge&logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/Latency-Ultra--Low-yellow?style=for-the-badge&logo=lightning" />
+</p>
+
+### ⚡ Autonomous Software Engineering Sandbox
+*Training agents to navigate codebases, one level at a time.*
+
 ---
-title: Lint Coding Agent
-emoji: 💻
-colorFrom: red
-colorTo: purple
-sdk: docker
-pinned: false
-app_port: 8000
-base_path: /web
-tags:
-  - openenv
+</div>
+
+## 📖 Overview
+
+A simple test environment that echoes back messages. Perfect for testing the env APIs as well as demonstrating environment usage patterns.
+
 ---
+
+## 🚀 Quick Start
+
+The simplest way to use the Lint Coding Agent environment is through the `LintCodingAgentEnv` class:
+
+```python
+from lint_coding_agent import LintCodingAgentAction, LintCodingAgentEnv
+
+try:
+    # 🔄 Initializing Docker Container...
+    lint_coding_agentenv = LintCodingAgentEnv.from_docker_image("lint_coding_agent-env:latest")
+
+    # 💠 Resetting State
+    result = lint_coding_agentenv.reset()
+    print(f"Reset: {result.observation.echoed_message}")
+
+    # 📡 Streaming messages via WebSocket
+    messages = ["Hello, World!", "Testing echo", "Final message"]
+
+    for msg in messages:
+        result = lint_coding_agentenv.step(LintCodingAgentAction(message=msg))
+        print(f"Sent: '{msg}'")
+        print(f"  → 🔊 Echoed: '{result.observation.echoed_message}'")
+        print(f"  → 📏 Length: {result.observation.message_length}")
+        print(f"  → 💎 Reward: {result.reward}")
+
+finally:
+    # 🧹 Auto-cleaning resources
+    lint_coding_agentenv.close()
 
 <div align="center">
 
