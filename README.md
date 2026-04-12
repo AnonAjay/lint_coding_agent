@@ -241,17 +241,30 @@ uvicorn server.app:app --reload
 
 ```
 lint_coding_agent/
-├── .dockerignore         # Docker build exclusions
-├── __init__.py            # Module exports
-├── README.md              # This file
-├── openenv.yaml           # OpenEnv manifest
-├── pyproject.toml         # Project metadata and dependencies
-├── uv.lock                # Locked dependencies (generated)
-├── client.py              # LintCodingAgentEnv client
-├── models.py              # Action and Observation models
-└── server/
-    ├── __init__.py        # Server module exports
-    ├── lint_coding_agent_environment.py  # Core environment logic
-    ├── app.py             # FastAPI application (HTTP + WebSocket endpoints)
-    └── Dockerfile         # Container image definition
+├── .github/                   # GitHub Actions (CI/CD for testing)
+│   └── workflows/
+│       └── test.yml
+├── .dockerignore              # Keep build context small
+├── .gitignore                 # Ignore __pycache__, .venv, etc.
+├── README.md                  # Enhanced with the code I gave you
+├── openenv.yaml               # OpenEnv configuration
+├── pyproject.toml             # Modern build system (replacing setup.py)
+├── uv.lock                    # Fast dependency locking
+├── src/                       # Source code directory
+│   └── lint_coding_agent/     # The actual package
+│       ├── __init__.py        # Expose main classes here
+│       ├── client.py          # User-facing client
+│       ├── models.py          # Pydantic/Data schemas
+│       └── server/            # Server-side logic
+│           ├── __init__.py
+│           ├── app.py         # FastAPI/WS entry point
+│           ├── core.py        # renamed from lint_coding_agent_environment.py
+│           └── templates/     # Your 15-level folders should live here
+│               ├── level_1/
+│               └── ...
+├── tests/                     # Dedicated test suite
+│   ├── __init__.py
+│   ├── test_client.py
+│   └── test_env_logic.py
+└── Dockerfile                 # Multi-stage build for production
 ```
