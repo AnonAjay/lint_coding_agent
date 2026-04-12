@@ -1,4 +1,4 @@
-﻿---
+﻿----
 title: Lint Coding Agent
 emoji: 💻
 colorFrom: red
@@ -9,7 +9,7 @@ app_port: 8000
 base_path: /web
 tags:
   - openenv
----
+----
 # Lint Coding Agent Environment
 
 A simple test environment that echoes back messages. Perfect for testing the env APIs as well as demonstrating environment usage patterns.
