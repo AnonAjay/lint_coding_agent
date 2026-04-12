@@ -12,9 +12,6 @@
 *Training agents to navigate codebases, one level at a time.*
 
 ---
-</div>
-# <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueGZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/L1R1QHUR4ONa9iCCdS/giphy.gif" width="35"> Lint Coding Agent Environment
----
 title: Lint Coding Agent
 emoji: 💻
 colorFrom: red
