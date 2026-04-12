@@ -32,10 +32,9 @@ import sys
 import os
 import argparse
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 
-# --- PATH INJECTION ---
-# We force the project root into sys.path to ensure 'models' and 'server' 
-# are resolvable regardless of how the container starts.
+# --- ARCHITECT'S PATH INJECTION ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 
@@ -43,59 +42,47 @@ for path in [project_root, current_dir]:
     if path not in sys.path:
         sys.path.insert(0, path)
 
-# Debug: Verifying the manifest is reachable before the app boots
-json_check = os.path.join(current_dir, "QUESTIONS.json")
-print(f"[DEBUG] Manifest check: {json_check} exists: {os.path.exists(json_check)}")
-
 # --- OPENENV CORE IMPORTS ---
 try:
     from openenv.core.server import create_app
 except ImportError:
-    try:
-        from openenv.core.env_server.http_server import create_app
-    except ImportError:
-        print("CRITICAL: 'openenv' library missing. Check requirements.txt.")
-        raise
+    from openenv.core.env_server.http_server import create_app
 
 # --- DOMAIN SPECIFIC IMPORTS ---
-try:
-    # Importing from the root models.py and the logic-heavy environment
-    from models import LintCodingAgentAction, LintCodingAgentObservation
-    from server.lint_coding_agent_environment import LintCodingAgentEnvironment
-except ImportError as e:
-    print(f"[IMPORT WARNING] Standard path failed, trying relative fallback: {e}")
-    try:
-        from lint_coding_agent_environment import LintCodingAgentEnvironment
-        from models import LintCodingAgentAction, LintCodingAgentObservation
-    except ImportError as final_e:
-        print(f"CRITICAL: Application structure invalid. {final_e}")
-        raise
+from models import LintCodingAgentAction, LintCodingAgentObservation
+from server.lint_coding_agent_environment import LintCodingAgentEnvironment
 
 # --- APP FACTORY ---
-# create_app wraps the Environment and Pydantic models into a FastAPI instance
 app = create_app(
     LintCodingAgentEnvironment,
     LintCodingAgentAction,
     LintCodingAgentObservation,
 )
 
+# 🚀 THE 403 KILLER: CORS MIDDLEWARE
+# This tells the server to accept requests and WebSocket upgrades from ANY origin.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permits your local machine to connect
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 def main():
     """
     Entry point for the OpenEnv Server.
-    The proxy_headers and forwarded_allow_ips are MANDATORY for 
-    Hugging Face Spaces to communicate with the Scaler Portal.
+    Standardized to port 7860 for Hugging Face deployment.
     """
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--port", type=int, default=7860)
     args = parser.parse_args()
     
-    print(f"🚀 OpenEnv Multi-Agent Sandbox Starting...")
-    print(f"📍 Search Space: VFS Templates Enabled")
-    print(f"📍 Network: {args.host}:{args.port}")
+    print(f"🚀 OpenEnv Sandbox Starting on {args.host}:{args.port}")
+    print(f"📍 Security: CORS Middleware Active (Allow All)")
     
-    # proxy_headers allows FastAPI to correctly identify the original 
-    # request IP through the Hugging Face Load Balancer.
+    # proxy_headers + forwarded_allow_ips are vital for HF's reverse proxy
     uvicorn.run(
         app, 
         host=args.host, 
