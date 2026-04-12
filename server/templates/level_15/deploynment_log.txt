@@ -1,0 +1,2 @@
+[SYSTEM] Database deployed at: https://xyz-db.supabase.co
+[ERROR] backend_api failed to start: Missing SUPABASE_URL.
