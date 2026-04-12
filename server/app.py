@@ -33,47 +33,46 @@ import os
 import argparse
 import uvicorn
 
-# --- ROBUST PATH INJECTION ---
-# This ensures that whether the server is run from the root or the /server folder,
-# it can always find models.py and the environment class.
+# --- PATH INJECTION ---
+# We force the project root into sys.path to ensure 'models' and 'server' 
+# are resolvable regardless of how the container starts.
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, ".."))
 
-for path in [current_dir, project_root]:
+for path in [project_root, current_dir]:
     if path not in sys.path:
         sys.path.insert(0, path)
 
-# Debug: Print path in logs so we can see what the container sees
-print(f"DEBUG: Python Path is {sys.path}")
+# Debug: Verifying the manifest is reachable before the app boots
+json_check = os.path.join(current_dir, "QUESTIONS.json")
+print(f"[DEBUG] Manifest check: {json_check} exists: {os.path.exists(json_check)}")
 
+# --- OPENENV CORE IMPORTS ---
 try:
-    # Use the specific OpenEnv factory method
     from openenv.core.server import create_app
 except ImportError:
-    # Fallback for different library versions
     try:
         from openenv.core.env_server.http_server import create_app
     except ImportError:
-        print("CRITICAL: 'openenv' library not found in environment.")
+        print("CRITICAL: 'openenv' library missing. Check requirements.txt.")
         raise
 
-# Absolute Import Attempts
+# --- DOMAIN SPECIFIC IMPORTS ---
 try:
+    # Importing from the root models.py and the logic-heavy environment
     from models import LintCodingAgentAction, LintCodingAgentObservation
     from server.lint_coding_agent_environment import LintCodingAgentEnvironment
 except ImportError as e:
-    print(f"IMPORT WARNING: Standard imports failed, trying relative... Error: {e}")
+    print(f"[IMPORT WARNING] Standard path failed, trying relative fallback: {e}")
     try:
-        from .lint_coding_agent_environment import LintCodingAgentEnvironment
-        # If models is in root and we are in server/, we need '..'
-        sys.path.append(project_root)
+        from lint_coding_agent_environment import LintCodingAgentEnvironment
         from models import LintCodingAgentAction, LintCodingAgentObservation
     except ImportError as final_e:
-        print(f"CRITICAL: All import attempts failed. {final_e}")
+        print(f"CRITICAL: Application structure invalid. {final_e}")
         raise
 
-# --- APP INITIALIZATION ---
-# env_name must match the name in your openenv.yaml
+# --- APP FACTORY ---
+# create_app wraps the Environment and Pydantic models into a FastAPI instance
 app = create_app(
     LintCodingAgentEnvironment,
     LintCodingAgentAction,
@@ -81,14 +80,29 @@ app = create_app(
 )
 
 def main():
-    """Entry point for local testing and Docker execution."""
+    """
+    Entry point for the OpenEnv Server.
+    The proxy_headers and forwarded_allow_ips are MANDATORY for 
+    Hugging Face Spaces to communicate with the Scaler Portal.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     
-    print(f"Starting OpenEnv Server on {args.host}:{args.port}")
-    uvicorn.run(app, host=args.host, port=args.port)
+    print(f"🚀 OpenEnv Multi-Agent Sandbox Starting...")
+    print(f"📍 Search Space: VFS Templates Enabled")
+    print(f"📍 Network: {args.host}:{args.port}")
+    
+    # proxy_headers allows FastAPI to correctly identify the original 
+    # request IP through the Hugging Face Load Balancer.
+    uvicorn.run(
+        app, 
+        host=args.host, 
+        port=args.port, 
+        proxy_headers=True, 
+        forwarded_allow_ips="*"
+    )
 
 if __name__ == "__main__":
     main()

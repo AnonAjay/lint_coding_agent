@@ -12,17 +12,30 @@ The lint_coding_agent environment is a simple test environment that echoes back 
 
 from openenv.core.env_server.types import Action, Observation
 from pydantic import Field
-from typing import List, Optional
+from typing import Dict, Any, Optional
 
 class LintCodingAgentAction(Action):
-    """The agent provides the code solution for the current level."""
-    code_solution: str = Field(..., description="The full code or fix for the level")
-    explanation: str = Field(..., description="Short reasoning for the fix")
+    """
+    Action schema for the Lead Architect.
+    The agent provides the fix and an explanation that tracks orchestration intent.
+    """
+    code_solution: str = Field(..., description="The full code or specific fix for the repo")
+    explanation: str = Field(..., description="Reasoning for the fix; used to track sub-agent spawning")
 
 class LintCodingAgentObservation(Observation):
-    """The environment provides the code challenge and the results of the linter/compiler."""
-    level: int = Field(..., description="Current difficulty level (1-20)")
-    language: str = Field(..., description="Programming language (e.g., Python, JS)")
-    problem_statement: str = Field(..., description="The coding task or bug description")
-    code_context: str = Field(..., description="The broken or incomplete code snippet")
-    last_test_results: Optional[str] = Field(default=None, description="Output from the previous run")
+    """
+    Observation schema for the VFS Search Space.
+    Provides the multi-file repository state and environment feedback.
+    """
+    level: int = Field(..., description="Current difficulty level (1-15)")
+    language: str = Field(..., description="Programming language context")
+    problem_statement: str = Field(..., description="The mission objective or bug description")
+    code_context: str = Field(..., description="JSON-stringified Virtual File System (VFS) map")
+    last_test_results: Optional[str] = Field(default=None, description="Linter output or execution logs")
+    
+    # Mandatory for OpenEnv SDK to track episode state
+    reward: float = Field(default=0.0, description="Reward from the previous transition")
+    done: bool = Field(default=False, description="Whether the curriculum is complete")
+    
+    # Metadata for 'God-level' tool discovery (MCP, Sub-agents)
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="VFS structure and available tools")

@@ -44,7 +44,7 @@ STDOUT FORMAT
 
 import os
 import textwrap
-import time
+import json
 from typing import List, Optional
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -60,12 +60,12 @@ except ImportError:
     from lint_coding_agent.models import LintCodingAgentAction
 
 # --- MANDATORY CONFIGURATION FOR SCALER PORTAL ---
-# Using the specific variables requested in the Hackathon README
+# Phase 2 Failure Fix: Ensure these variables are dynamically pulled.
 API_KEY = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN")
 API_BASE_URL = os.environ.get("API_BASE_URL") or "https://router.huggingface.co/hf-inference/v1"
 MODEL_NAME = os.environ.get("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
 
-# Your Specific Environment Address
+# Your Specific Environment Address (The 'Server' part)
 ADDRESS = "https://anonajay-lint-coding-agent.hf.space"
 
 # Task Metadata
@@ -77,40 +77,36 @@ TEMPERATURE = 0.2
 MAX_TOKENS = 150
 SUCCESS_SCORE_THRESHOLD = 0.1 
 
-# SYSTEM PROMPT (Multi-lingual Architect Persona)
+# SYSTEM PROMPT (Lead Architect Persona)
 SYSTEM_PROMPT = textwrap.dedent(
     """
-    You are an expert multi-lingual software engineer. 
-    Your task is to fix linting, syntax, and logic errors in the provided code snippet.
-    You will be given the programming language and the specific problem.
-    Reply ONLY with the fixed line or snippet of code.
-    No explanations, no markdown code blocks, just the raw code.
+    You are an expert multi-lingual software architect.
+    You will receive a Virtual File System (VFS) as a JSON map.
+    Your task: Find the bug in the files and return ONLY the raw code fix.
+    No explanations, no markdown blocks. Just code.
     """
 ).strip()
 
 def log_start(task: str, env: str, model: str) -> None:
-    # Format: [START] task=<task_name> env=<benchmark> model=<model_name>
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
 def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
-    # Format: [STEP] step=<n> action=<action_str> reward=<0.00> done=<true|false> error=<msg|null>
     error_val = error if error else "null"
     done_val = str(done).lower()
-    # Clean action_str to ensure it stays on one line for the logs
-    action_clean = action.replace("\n", " ").strip()
+    # Lead Architect Tip: Truncate action for logs to keep them single-line
+    action_clean = action.replace("\n", " ").strip()[:50]
     print(f"[STEP] step={step} action={action_clean} reward={reward:.2f} done={done_val} error={error_val}", flush=True)
 
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
-    # Format: [END] success=<true|false> steps=<n> score=<score> rewards=<r1,r2,...,rn>
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
     success_val = str(success).lower()
     print(f"[END] success={success_val} steps={steps} score={score:.2f} rewards={rewards_str}", flush=True)
 
 def main() -> None:
-    # Initialize OpenAI Client strictly using the mandated variables
+    # Initialize OpenAI Client via Scaler Proxy
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     
-    # Initialize the OpenEnv client (Sync version for reliability)
+    # Initialize the OpenEnv client
     env = OpenEnv(ADDRESS)
 
     rewards: List[float] = []
@@ -121,21 +117,27 @@ def main() -> None:
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        # 1. Reset Environment
+        # 1. Reset Environment & Load VFS
         result = env.reset()
         
         for step in range(1, MAX_STEPS + 1):
             obs = result.observation
             
-            # 2. Build User Prompt
+            # 2. Parse VFS Search Space for the Agent
+            # obs.code_context is now a JSON string of the repo
+            try:
+                vfs_data = json.loads(obs.code_context)
+                vfs_display = json.dumps(vfs_data, indent=2)
+            except:
+                vfs_display = obs.code_context
+
             user_prompt = (
-                f"Language: {obs.language}\n"
+                f"Virtual File System:\n{vfs_display}\n\n"
                 f"Task: {obs.problem_statement}\n"
-                f"Context: {obs.code_context}\n"
-                f"Instruction: Fix the code."
+                f"Instruction: Locate and fix the bug."
             )
 
-            # 3. LLM Inference
+            # 3. LLM Inference via Scaler Proxy
             completion = client.chat.completions.create(
                 model=MODEL_NAME,
                 messages=[
@@ -148,40 +150,34 @@ def main() -> None:
             
             action_text = (completion.choices[0].message.content or "").strip()
             
-            # 4. Environment Step
-            # Using your specific Pydantic Action Class
+            # 4. Environment Step (The State Transition)
             result = env.step(LintCodingAgentAction(
                 code_solution=action_text, 
-                explanation=f"Applying {obs.language} fix for level {obs.level}."
+                explanation=f"Architect fix for {obs.language} at level {obs.level}"
             ))
             
             reward = result.reward or 0.0
             done = result.done
-            error = None # OpenEnv typically handles exceptions via the try-except block
-
+            
             rewards.append(reward)
             steps_taken = step
 
-            # 5. Log Step immediately after env.step()
-            log_step(step=step, action=action_text, reward=reward, done=done, error=error)
+            # 5. Log Step immediately for the Portal Grader
+            log_step(step=step, action=action_text, reward=reward, done=done, error=None)
 
             if done:
+                success = True
                 break
 
-        # Calculate normalized score [0, 1]
         score = sum(rewards) / len(rewards) if rewards else 0.0
-        score = min(max(score, 0.0), 1.0)
         success = score >= SUCCESS_SCORE_THRESHOLD
 
     except Exception as e:
-        # If reset or step fails due to SDK issues, we log null but maintain format
         error_msg = str(e).replace("\n", " ")
         if steps_taken == 0:
-            # Fallback to ensure [END] is always reachable for the grader
-            log_step(step=1, action="error_fallback", reward=0.0, done=True, error=error_msg)
+            log_step(step=1, action="error_retry", reward=0.0, done=True, error=error_msg)
     
     finally:
-        # Final [END] line is always emitted
         log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
 
 if __name__ == "__main__":

@@ -44,54 +44,69 @@ class LintCodingAgentEnv(
         ...     client.close()
     """
 
-    def _step_payload(self, action: LintCodingAgentAction) -> Dict:
+"""Lint Coding Agent Environment Client Implementation."""
+
+from typing import Dict, Any
+from openenv.core import EnvClient
+from openenv.core.client_types import StepResult
+from openenv.core.env_server.types import State
+
+try:
+    from .models import LintCodingAgentAction, LintCodingAgentObservation
+except ImportError:
+    from models import LintCodingAgentAction, LintCodingAgentObservation
+
+
+class LintCodingAgentEnv(
+    EnvClient[LintCodingAgentAction, LintCodingAgentObservation, State]
+):
+    """
+    Lead Architect Client for the Lint Coding Agent Environment.
+    
+    Supports complex state transitions within the Virtual File System (VFS)
+    and handles the specialized Pydantic models for code-based actions.
+    """
+
+    def _step_payload(self, action: LintCodingAgentAction) -> Dict[str, Any]:
         """
-        Convert LintCodingAgentAction to JSON payload for step message.
-
-        Args:
-            action: LintCodingAgentAction instance
-
-        Returns:
-            Dictionary representation suitable for JSON encoding
+        Serializes the Action for the OpenEnv WebSocket/HTTP transport.
+        
+        Note: The 'explanation' field is vital here as the server uses it 
+        to track recursive sub-agent spawning for taxation.
         """
         return {
-            "message": action.message,
+            "code_solution": action.code_solution,
+            "explanation": action.explanation,
         }
 
-    def _parse_result(self, payload: Dict) -> StepResult[LintCodingAgentObservation]:
+    def _parse_result(self, payload: Dict[str, Any]) -> StepResult[LintCodingAgentObservation]:
         """
-        Parse server response into StepResult[LintCodingAgentObservation].
-
-        Args:
-            payload: JSON response data from server
-
-        Returns:
-            StepResult with LintCodingAgentObservation
+        Parses the multi-file VFS search space and detailed feedback 
+        received from the environment server.
         """
         obs_data = payload.get("observation", {})
+        
+        # Mapping the raw JSON observation to our Pydantic Model
         observation = LintCodingAgentObservation(
-            echoed_message=obs_data.get("echoed_message", ""),
-            message_length=obs_data.get("message_length", 0),
-            done=payload.get("done", False),
-            reward=payload.get("reward"),
+            level=obs_data.get("level", 1),
+            language=obs_data.get("language", "Python"),
+            problem_statement=obs_data.get("problem_statement", ""),
+            code_context=obs_data.get("code_context", "{}"),  # This is our VFS JSON string
+            last_test_results=obs_data.get("last_test_results", ""),
+            reward=obs_data.get("reward", 0.0),
+            done=obs_data.get("done", False),
             metadata=obs_data.get("metadata", {}),
         )
 
         return StepResult(
             observation=observation,
-            reward=payload.get("reward"),
+            reward=payload.get("reward", 0.0),
             done=payload.get("done", False),
         )
 
-    def _parse_state(self, payload: Dict) -> State:
+    def _parse_state(self, payload: Dict[str, Any]) -> State:
         """
-        Parse server response into State object.
-
-        Args:
-            payload: JSON response from state request
-
-        Returns:
-            State object with episode_id and step_count
+        Maintains the session integrity for persistent agent tracking.
         """
         return State(
             episode_id=payload.get("episode_id"),

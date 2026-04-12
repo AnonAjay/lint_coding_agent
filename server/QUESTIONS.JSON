@@ -1,52 +1,122 @@
 {
-  "1": {"lang": "Python", "task": "Fix Python 2 Print", "context": "print 'Hello World'", "ans": "print("},
-  "2": {"lang": "Python", "task": "Missing Colon in If", "context": "if True print('Success')", "ans": "True:"},
-  "3": {"lang": "Python", "task": "Indentation Error", "context": "def f():\nreturn 1", "ans": "    return"},
-  "4": {"lang": "JavaScript", "task": "Const Reassignment", "context": "const x=10; x=20;", "ans": "let x"},
-  "5": {"lang": "JavaScript", "task": "Strict Equality", "context": "if (x == '5')", "ans": "==="},
-  "6": {"lang": "Python", "task": "Import Error", "context": "from math import floor_div", "ans": "floor"},
-  "7": {"lang": "Java", "task": "Missing Semicolon", "context": "int x = 5", "ans": "5;"},
-  "8": {"lang": "Java", "task": "String Comparison", "context": "if (str == 'admin')", "ans": ".equals("},
-  "9": {"lang": "Python", "task": "List Appending", "context": "my_list.add(5)", "ans": ".append("},
-  "10": {"lang": "Python", "task": "JSON Loads Logic", "context": "json.load('{\"a\":1}')", "ans": "json.loads"},
-  "11": {"lang": "C++", "task": "Pointer Syntax", "context": "int x = 5; int ptr = &x;", "ans": "int*"},
-  "12": {"lang": "Python", "task": "Mutable Default Arg", "context": "def f(a=[])", "ans": "None"},
-  "13": {"lang": "JavaScript", "task": "Template Literal", "context": "'Value: ' + x", "ans": "`${x}`"},
-  "14": {"lang": "Python", "task": "Type Error", "context": "len(555)", "ans": "str(555)"},
-  "15": {"lang": "Python", "task": "Dictionary Access", "context": "d.key", "ans": "d['key']"},
-  "16": {"lang": "C++", "task": "Namespace Missing", "context": "cout << 'Hi';", "ans": "std::cout"},
-  "17": {"lang": "Python", "task": "F-String Syntax", "context": "f'Val is {x'", "ans": "{x}"},
-  "18": {"lang": "JavaScript", "task": "Undefined Check", "context": "if (x = undefined)", "ans": "==="},
-  "19": {"lang": "Python", "task": "Except Block", "context": "except Error, e:", "ans": "as e:"},
-  "20": {"lang": "Rust", "task": "Ownership/Borrow", "context": "let s2 = s1;", "ans": ".clone()"},
-  "21": {"lang": "Python", "task": "Range Logic", "context": "range(10, 0)", "ans": "-1"},
-  "22": {"lang": "Java", "task": "Main Method", "context": "void main(String args)", "ans": "static"},
-  "23": {"lang": "Python", "task": "Open File Mode", "context": "open('f.txt', 'r').write()", "ans": "'w'"},
-  "24": {"lang": "JavaScript", "task": "Async Missing", "context": "await fetch(url)", "ans": "async"},
-  "25": {"lang": "Python", "task": "Class Init", "context": "def init(self):", "ans": "__init__"},
-  "26": {"lang": "C++", "task": "Vector Access", "context": "v.at[0]", "ans": "v[0]"},
-  "27": {"lang": "Python", "task": "Set Literal", "context": "s = {1, 1, 2}", "ans": "{1, 2}"},
-  "28": {"lang": "JavaScript", "task": "Arrow Function", "context": "func = () => { x }", "ans": "return"},
-  "29": {"lang": "Java", "task": "Boolean Value", "context": "boolean b = 1;", "ans": "true"},
-  "30": {"lang": "Python", "task": "Super Call", "context": "super.init()", "ans": "super().__init__"},
-  "31": {"lang": "Python", "task": "Global Keyword", "context": "x = 10; def f(): x = 5", "ans": "global x"},
-  "32": {"lang": "JavaScript", "task": "Map Return", "context": "arr.map(x => { x * 2 })", "ans": "return"},
-  "33": {"lang": "Python", "task": "Lambda Syntax", "context": "lambda x: return x", "ans": "x: x"},
-  "34": {"lang": "Java", "task": "Final Variable", "context": "final int x = 1; x = 2;", "ans": "int x"},
-  "35": {"lang": "Python", "task": "Init Self Missing", "context": "def __init__():", "ans": "(self)"},
-  "36": {"lang": "C++", "task": "Memory Leak", "context": "int* p = new int[5];", "ans": "delete[]"},
-  "37": {"lang": "Python", "task": "Zip Unpack", "context": "for a, b in zip(l1)", "ans": "l1, l2"},
-  "38": {"lang": "JavaScript", "task": "Nullish Coalescing", "context": "x || 'default'", "ans": "??"},
-  "39": {"lang": "Python", "task": "Format Specifier", "context": "'%.2f' % 'str'", "ans": "1.23"},
-  "40": {"lang": "Java", "task": "Inheritance", "context": "class A implements B", "ans": "extends"},
-  "41": {"lang": "Python", "task": "Docstring", "context": "'This is doc' def f():", "ans": "def f():\n    \"\"\""},
-  "42": {"lang": "JavaScript", "task": "Promise Resolve", "context": "new Promise((res) => res)", "ans": "res()"},
-  "43": {"lang": "Python", "task": "Sort Key", "context": "list.sort(key=None)", "ans": "lambda"},
-  "44": {"lang": "C++", "task": "For Loop Iterator", "context": "for(i=0; i<5; i++)", "ans": "int i"},
-  "45": {"lang": "Python", "task": "Regex Escape", "context": "re.search('\\d', s)", "ans": "r'\\d'"},
-  "46": {"lang": "Java", "task": "ArrayList Type", "context": "List<int> l;", "ans": "Integer"},
-  "47": {"lang": "Python", "task": "Static Method", "context": "def f(self):", "ans": "@staticmethod"},
-  "48": {"lang": "JavaScript", "task": "Module Export", "context": "export f(){}", "ans": "export function"},
-  "49": {"lang": "Python", "task": "Async Loop", "context": "for x in async_gen():", "ans": "async for"},
-  "50": {"lang": "Python", "task": "Final Challenge", "context": "eval(input())", "ans": "ast.literal_eval"}
+  "1": {
+    "lang": "Python",
+    "tier": "Junior",
+    "task": "Resolve relative import failure in package structure.",
+    "template_dir": "level_1",
+    "ans": "from . import core",
+    "hint": "The main.py is inside the package; it needs a relative import dot."
+  },
+  "2": {
+    "lang": "JavaScript",
+    "tier": "Junior",
+    "task": "Fix the ES Module vs CommonJS export mismatch.",
+    "template_dir": "level_2",
+    "ans": "import { log }",
+    "hint": "You cannot 'require' a file that uses 'export const'."
+  },
+  "3": {
+    "lang": "Python",
+    "tier": "Junior",
+    "task": "Fix the mutable default argument logic error.",
+    "template_dir": "level_3",
+    "ans": "box=None",
+    "hint": "Default lists are instantiated once at definition time, not call time."
+  },
+  "4": {
+    "lang": "C++",
+    "tier": "Junior",
+    "task": "Add missing header guards to prevent redefinition.",
+    "template_dir": "level_4",
+    "ans": "#pragma once",
+    "hint": "The compiler sees the same function twice because the header isn't guarded."
+  },
+  "5": {
+    "lang": "Java",
+    "tier": "Junior",
+    "task": "Fix Access Modifier blocking external test visibility.",
+    "template_dir": "level_5",
+    "ans": "public boolean",
+    "hint": "Tests in a different package cannot access 'private' methods."
+  },
+  "6": {
+    "lang": "Python/Django",
+    "tier": "Senior",
+    "task": "Optimize the N+1 Query bottleneck in the ORM.",
+    "template_dir": "level_6",
+    "ans": "select_related('author')",
+    "hint": "Use a join to fetch authors in the same query as the posts."
+  },
+  "7": {
+    "lang": "Rust",
+    "tier": "Senior",
+    "task": "Resolve Thread-Safety/Ownership conflict for shared state.",
+    "template_dir": "level_7",
+    "ans": "Arc<Mutex<",
+    "hint": "Wrap the mutable integer in an Atomic Reference Counter and a Mutex."
+  },
+  "8": {
+    "lang": "JavaScript",
+    "tier": "Senior",
+    "task": "Fix memory leak caused by dangling IntersectionObservers.",
+    "template_dir": "level_8",
+    "ans": "obs.disconnect()",
+    "hint": "Observers must be manually torn down when the component unmounts."
+  },
+  "9": {
+    "lang": "Go",
+    "tier": "Senior",
+    "task": "Fix unbuffered channel deadlock in the main routine.",
+    "template_dir": "level_9",
+    "ans": "make(chan int, 1)",
+    "hint": "The sender is blocking before the receiver can start."
+  },
+  "10": {
+    "lang": "Python/FastAPI",
+    "tier": "Senior",
+    "task": "Prevent global state pollution in async requests.",
+    "template_dir": "level_10",
+    "ans": "ContextVar",
+    "hint": "Global variables are shared across async threads; use context-local vars."
+  },
+  "11": {
+    "lang": "System/Search",
+    "tier": "Architect",
+    "task": "The repo is too large. Spawn sub-agents to map Auth logic.",
+    "template_dir": "level_11",
+    "ans": "spawn_sub_agent",
+    "hint": "Use a specialized sub-agent to grep through the 100+ virtual files."
+  },
+  "12": {
+    "lang": "System/MCP",
+    "tier": "Architect",
+    "task": "Use Weather MCP to gate the automated deployment.",
+    "template_dir": "level_12",
+    "ans": "mcp.call_tool('weather_v1'",
+    "hint": "Check the weather tool in metadata; abort if storm_risk > 80%."
+  },
+  "13": {
+    "lang": "System/Web",
+    "tier": "Architect",
+    "task": "Search for breaking changes in OpenAI v1.0 migration.",
+    "template_dir": "level_13",
+    "ans": "web_search",
+    "hint": "The library syntax changed. Search the web for the new client init."
+  },
+  "14": {
+    "lang": "System/Conflict",
+    "tier": "Architect",
+    "task": "Resolve a multi-file merge conflict in auth.py.",
+    "template_dir": "level_14",
+    "ans": "accept_incoming",
+    "hint": "Manually clean the git conflict markers (<<<<, ====, >>>>)."
+  },
+  "15": {
+    "lang": "System/Final",
+    "tier": "Architect",
+    "task": "Final Boss: Deploy Full-Stack via Orchestration.",
+    "template_dir": "level_15",
+    "ans": "orchestrate_full_stack",
+    "hint": "Spawn agents for DB, API, and UI. Deploy all layers via MCP."
+  }
 }
