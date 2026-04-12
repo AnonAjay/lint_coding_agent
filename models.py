@@ -18,19 +18,26 @@ class LintCodingAgentAction(Action):
     """
     Action schema for the Lead Architect.
     The agent provides the fix and an explanation that tracks orchestration intent.
+    Optional fields prevent 422 Validation Errors during manual UI testing.
     """
-    code_solution: str = Field(..., description="The full code or specific fix for the repo")
-    explanation: str = Field(..., description="Reasoning for the fix; used to track sub-agent spawning")
+    code_solution: Optional[str] = Field(
+        default="", 
+        description="The full code or specific fix for the repo"
+    )
+    explanation: Optional[str] = Field(
+        default="Direct intervention", 
+        description="Reasoning for the fix; used to track sub-agent spawning or taxation"
+    )
 
 class LintCodingAgentObservation(Observation):
     """
     Observation schema for the VFS Search Space.
     Provides the multi-file repository state and environment feedback.
     """
-    level: int = Field(..., description="Current difficulty level (1-15)")
-    language: str = Field(..., description="Programming language context")
-    problem_statement: str = Field(..., description="The mission objective or bug description")
-    code_context: str = Field(..., description="JSON-stringified Virtual File System (VFS) map")
+    level: int = Field(default=1, description="Current difficulty level (1-15)")
+    language: str = Field(default="Python", description="Programming language context")
+    problem_statement: str = Field(default="", description="The mission objective or bug description")
+    code_context: str = Field(default="{}", description="JSON-stringified Virtual File System (VFS) map")
     last_test_results: Optional[str] = Field(default=None, description="Linter output or execution logs")
     
     # Mandatory for OpenEnv SDK to track episode state
