@@ -1,4 +1,4 @@
-﻿---
+---
 title: Lint Coding Agent
 emoji: 💻
 colorFrom: red
@@ -10,11 +10,16 @@ base_path: /web
 tags:
   - openenv
 ---
-# Lint Coding Agent Environment
+
+# <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueGZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/L1R1QHUR4ONa9iCCdS/giphy.gif" width="35"> Lint Coding Agent Environment
+
+> **System Status:** `Running` 🟢 | **Sandbox:** `Docker` 🐳 | **Latency:** `Ultra-Low` ⚡
 
 A simple test environment that echoes back messages. Perfect for testing the env APIs as well as demonstrating environment usage patterns.
 
-## Quick Start
+---
+
+## 🚀 Quick Start
 
 The simplest way to use the Lint Coding Agent environment is through the `LintCodingAgentEnv` class:
 
@@ -22,60 +27,26 @@ The simplest way to use the Lint Coding Agent environment is through the `LintCo
 from lint_coding_agent import LintCodingAgentAction, LintCodingAgentEnv
 
 try:
-    # Create environment from Docker image
-    lint_coding_agentenv = LintCodingAgentEnv.from_docker_image("lint_coding_agent-env:latest")
+    # 🔄 Initializing Docker Container...
+    lint_coding_agentenv = LintCodingAgentEnv.from_docker_image("lint_coding_agent-env:latest")
 
-    # Reset
-    result = lint_coding_agentenv.reset()
-    print(f"Reset: {result.observation.echoed_message}")
+    # 💠 Resetting State
+    result = lint_coding_agentenv.reset()
+    print(f"Reset: {result.observation.echoed_message}")
 
-    # Send multiple messages
-    messages = ["Hello, World!", "Testing echo", "Final message"]
+    # 📡 Streaming messages via WebSocket
+    messages = ["Hello, World!", "Testing echo", "Final message"]
 
-    for msg in messages:
-        result = lint_coding_agentenv.step(LintCodingAgentAction(message=msg))
-        print(f"Sent: '{msg}'")
-        print(f"  → Echoed: '{result.observation.echoed_message}'")
-        print(f"  → Length: {result.observation.message_length}")
-        print(f"  → Reward: {result.reward}")
+    for msg in messages:
+        result = lint_coding_agentenv.step(LintCodingAgentAction(message=msg))
+        print(f"Sent: '{msg}'")
+        print(f"  → 🔊 Echoed: '{result.observation.echoed_message}'")
+        print(f"  → 📏 Length: {result.observation.message_length}")
+        print(f"  → 💎 Reward: {result.reward}")
 
 finally:
-    # Always clean up
-    lint_coding_agentenv.close()
-```
-
-That's it! The `LintCodingAgentEnv.from_docker_image()` method handles:
-- Starting the Docker container
-- Waiting for the server to be ready
-- Connecting to the environment
-- Container cleanup when you call `close()`
-
-## Building the Docker Image
-
-Before using the environment, you need to build the Docker image:
-
-```bash
-# From project root
-docker build -t lint_coding_agent-env:latest -f server/Dockerfile .
-```
-
-## Deploying to Hugging Face Spaces
-
-You can easily deploy your OpenEnv environment to Hugging Face Spaces using the `openenv push` command:
-
-```bash
-# From the environment directory (where openenv.yaml is located)
-openenv push
-
-# Or specify options
-openenv push --namespace my-org --private
-```
-
-The `openenv push` command will:
-1. Validate that the directory is an OpenEnv environment (checks for `openenv.yaml`)
-2. Prepare a custom build for Hugging Face Docker space (enables web interface)
-3. Upload to Hugging Face (ensuring you're logged in)
-
+    # 🧹 Auto-cleaning resources
+    lint_coding_agentenv.close()
 ### Prerequisites
 
 - Authenticate with Hugging Face: The command will prompt for login if not already authenticated
