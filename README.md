@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/PRs-welcome-orange?style=for-the-badge&logo=github" />
 </p>
 <div>
-### ⚡ Autonomous Software Engineering Sandbox
+### ⚡ Autonomous Software Engineering Sandbox  ###
 *Training agents to navigate codebases, one level at a time.*
 
 ---
