@@ -59,8 +59,6 @@ app = create_app(
     LintCodingAgentObservation,
 )
 
-# 🚀 THE 403 KILLER: CORS MIDDLEWARE
-# This tells the server to accept requests and WebSocket upgrades from ANY origin.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Permits your local machine to connect

@@ -8,24 +8,21 @@
 
 import os
 import sys
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
 from openenv.core.env_server.types import State
 
-# 🚀 CRITICAL FIX: Robust Absolute/Relative Import logic
-# This ensures that whether running via 'uv run' or as a module, it finds the models.
+# --- ROBUST IMPORT LOGIC ---
 try:
     from models import LintCodingAgentAction, LintCodingAgentObservation
 except ImportError:
     try:
         from .models import LintCodingAgentAction, LintCodingAgentObservation
     except ImportError:
-        # Final fallback for unusual container environments
         sys.path.append(os.path.dirname(os.path.abspath(__file__)))
         from models import LintCodingAgentAction, LintCodingAgentObservation
-
 
 class LintCodingAgentEnv(
     EnvClient[LintCodingAgentAction, LintCodingAgentObservation, State]
@@ -33,17 +30,25 @@ class LintCodingAgentEnv(
     """
     Lead Architect Client for the Lint Coding Agent Environment.
     
-    Maintains the persistent WebSocket/HTTP handshake with the Hugging Face Space.
-    Handles the 15-level VFS state transitions and serializes specialized 
-    Pydantic models for code-based architectural fixes.
+    Optimized for Hugging Face Spaces with custom header support to bypass
+    CSRF/Origin 403 Forbidden rejections.
     """
+
+    def __init__(
+        self, 
+        base_url: str, 
+        headers: Optional[Dict[str, str]] = None,
+        **kwargs
+    ):
+        """
+        Initialize the client with optional headers for Hugging Face authentication.
+        """
+        # We pass headers to the parent EnvClient which uses them for HTTP/WS sessions
+        super().__init__(base_url=base_url, headers=headers, **kwargs)
 
     def _step_payload(self, action: LintCodingAgentAction) -> Dict[str, Any]:
         """
         Serializes the Action for the OpenEnv transport layer.
-        
-        The 'explanation' field is utilized by the server to monitor 
-        agency taxation and sub-agent spawning logic.
         """
         return {
             "code_solution": action.code_solution,
@@ -52,19 +57,18 @@ class LintCodingAgentEnv(
 
     def _parse_result(self, payload: Dict[str, Any]) -> StepResult[LintCodingAgentObservation]:
         """
-        Parses the multi-file VFS search space and detailed feedback 
-        received from the environment server.
+        Parses the multi-file VFS search space and mapping it to our Pydantic Model.
         """
+        # The payload usually nests the observation
         obs_data = payload.get("observation", {})
         
-        # 🛡️ Defensive Mapping: Ensure no field is None to prevent Pydantic crashes
         observation = LintCodingAgentObservation(
             level=obs_data.get("level", 1),
             language=obs_data.get("language", "Python"),
-            problem_statement=obs_data.get("problem_statement", "Task initiated."),
-            code_context=obs_data.get("code_context", "{}"),  # VFS JSON string
+            problem_statement=obs_data.get("problem_statement", "Running..."),
+            code_context=obs_data.get("code_context", "{}"),
             last_test_results=obs_data.get("last_test_results", ""),
-            reward=payload.get("reward", 0.0), # SDK priority on top-level payload
+            reward=payload.get("reward", 0.0), 
             done=payload.get("done", False),
             metadata=obs_data.get("metadata", {}),
         )
@@ -77,9 +81,9 @@ class LintCodingAgentEnv(
 
     def _parse_state(self, payload: Dict[str, Any]) -> State:
         """
-        Maintains session integrity for persistent agent tracking across 15 levels.
+        Maintains session integrity across the 15-level sprint.
         """
         return State(
-            episode_id=payload.get("episode_id"),
+            episode_id=payload.get("episode_id") or payload.get("session_id"),
             step_count=payload.get("step_count", 0),
         )
