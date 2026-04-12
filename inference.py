@@ -44,107 +44,118 @@ STDOUT FORMAT
 
 import asyncio
 import os
-import textwrap
+import sys
 import json
+import textwrap
 from typing import List, Optional
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# 🚀 THE FIX: Import the base EnvClient. It is async by default.
-from openenv import EnvClient
+# 🚀 THE BREAKPOINT FIX
+# Force the current directory into the front of the path.
+# This ensures 'from client import ...' hits YOUR file, not a library.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-# Load local .env for testing
-load_dotenv()
-
-# IMPORT YOUR ACTION CLASS
 try:
+    from client import LintCodingAgentEnv
     from models import LintCodingAgentAction
-except ImportError:
-    from lint_coding_agent.models import LintCodingAgentAction
+except ImportError as e:
+    print(f"CRITICAL: Local architecture files missing: {e}")
+    sys.exit(1)
+
+load_dotenv()
 
 # --- CONFIGURATION ---
 API_KEY = os.environ.get("API_KEY") or os.environ.get("HF_TOKEN")
 API_BASE_URL = os.environ.get("API_BASE_URL") or "https://router.huggingface.co/hf-inference/v1"
 MODEL_NAME = os.environ.get("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
-ADDRESS = "https://anonajay-lint-coding-agent.hf.space"
+ADDRESS = os.environ.get("ADDRESS") or "https://anonajay-lint-coding-agent.hf.space"
 
 TASK_NAME = "multi-lang-lint-v1"
 BENCHMARK = "lint-coding-v1"
-MAX_STEPS = 10
+MAX_STEPS = 15 
 
-SYSTEM_PROMPT = "You are an expert architect. Fix the code in the VFS. Return ONLY raw code."
+SYSTEM_PROMPT = textwrap.dedent(
+    """
+    You are a Lead Architect. You will receive a VFS (Virtual File System) JSON.
+    Identify the bug in the code provided in the context.
+    Respond ONLY with the corrected code. No explanations. No markdown blocks.
+    """
+).strip()
 
-def log_start(task: str, env: str, model: str) -> None:
+def log_start(task: str, env: str, model: str):
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
+def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]):
+    # Cleanup for clean STDOUT logging required by Scaler
     action_clean = action.replace("\n", " ").strip()[:50]
     print(f"[STEP] step={step} action={action_clean} reward={reward:.2f} done={str(done).lower()} error={error or 'null'}", flush=True)
 
-def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
+def log_end(success: bool, steps: int, score: float, rewards: List[float]):
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
+    print(f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}", flush=True)
 
-async def main() -> None:
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+async def main():
+    # OpenAI client handles the handshake with the Qwen/Scaler proxy
+    llm_client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     
-    rewards: List[float] = []
-    steps_taken = 0
-    success = False
+    rewards, steps_taken, success = [], 0, False
 
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
 
     try:
-        # 🚀 THE CRITICAL HANDSHAKE:
-        # Use EnvClient directly. Use 'base_url' as the keyword.
-        async with EnvClient(base_url=ADDRESS) as env:
+        # 🏁 THE ASYNC HANDSHAKE
+        # Using the local wrapper ensures we can handle the 15-level VFS state
+        async with LintCodingAgentEnv(base_url=ADDRESS) as env:
             
-            # Reset Environment
+            # Reset triggers the server to load Level 1 from templates
             result = await env.reset()
             
             for step in range(1, MAX_STEPS + 1):
                 obs = result.observation
                 
-                try:
-                    vfs_display = json.dumps(json.loads(obs.code_context), indent=2)
-                except:
-                    vfs_display = obs.code_context
+                # Context parsing for the 15 levels
+                vfs_display = obs.code_context
 
-                user_prompt = f"VFS Structure:\n{vfs_display}\n\nTask: {obs.problem_statement}"
+                user_prompt = (
+                    f"LEVEL: {obs.level}\n"
+                    f"LANGUAGE: {obs.language}\n"
+                    f"VFS STATE:\n{vfs_display}\n\n"
+                    f"OBJECTIVE: {obs.problem_statement}"
+                )
 
-                # LLM Call
-                completion = client.chat.completions.create(
+                # LLM Inference with Architect precision
+                completion = llm_client.chat.completions.create(
                     model=MODEL_NAME,
                     messages=[
                         {"role": "system", "content": SYSTEM_PROMPT},
-                        {"role": "user", "content": user_prompt},
+                        {"role": "user", "content": user_prompt}
                     ],
-                    temperature=0.2,
-                    max_tokens=200,
+                    temperature=0.1
                 )
                 
                 action_text = (completion.choices[0].message.content or "").strip()
                 
-                # State Transition (Awaited)
+                # 🚀 STEP TRANSITION
+                # The await here is critical because LintCodingAgentEnv is Async
                 result = await env.step(LintCodingAgentAction(
-                    code_solution=action_text, 
-                    explanation=f"Async fix level {obs.level}"
+                    code_solution=action_text,
+                    explanation=f"Architect Fix Level {obs.level}"
                 ))
                 
                 reward = result.reward or 0.0
-                done = result.done
-                
                 rewards.append(reward)
                 steps_taken = step
-                log_step(step, action_text, reward, done, None)
-
-                if done:
-                    success = True
+                
+                log_step(step, action_text, reward, result.done, None)
+                
+                if result.done:
+                    # Success logic: Average reward threshold for the sprint
+                    success = (sum(rewards) / len(rewards)) >= 0.1
                     break
 
     except Exception as e:
-        if steps_taken == 0:
-            log_step(1, "error_retry", 0.0, True, str(e))
+        log_step(steps_taken + 1, "phase2_exec_error", 0.0, True, str(e))
     
     finally:
         score = sum(rewards) / len(rewards) if rewards else 0.0

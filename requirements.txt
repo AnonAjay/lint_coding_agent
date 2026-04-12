@@ -1,0 +1,33 @@
+# --- CORE INFRASTRUCTURE ---
+# High-performance package management
+uv>=0.1.0
+
+# --- OPENENV & AGENTIC STACK ---
+# The foundation for the environment server and client
+openenv-core>=0.2.0
+# Pydantic is critical for the models.py validation
+pydantic>=2.0.0
+# Async support for the client.py architecture
+asyncio>=3.4.3
+# Environment variable management for your .env
+python-dotenv>=1.0.0
+
+# --- LLM & INFERENCE ---
+# For the handshake with Qwen/Scaler Proxy
+openai>=1.10.0
+# Deep parsing for the VFS search space
+typing-extensions>=4.8.0
+
+# --- SERVER & NETWORKING ---
+# Mandatory for app.py to run the FastAPI instance
+uvicorn[standard]>=0.23.0
+# HTTP transport for the Hugging Face Space
+httpx>=0.25.0
+# Multi-file processing and VFS logic
+pathspec>=0.11.0
+
+# --- UTILS & LINTING ---
+# Used in your LintCodingAgentEnvironment for AST parsing
+asttokens>=2.4.0
+# Recommended for level verification if you add a 'test' step
+pytest>=7.4.0

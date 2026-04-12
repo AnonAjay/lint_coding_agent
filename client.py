@@ -4,57 +4,27 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""Lint Coding Agent Environment Client."""
-
-from typing import Dict
-
-from openenv.core import EnvClient
-from openenv.core.client_types import StepResult
-from openenv.core.env_server.types import State
-
-from .models import LintCodingAgentAction, LintCodingAgentObservation
-
-
-class LintCodingAgentEnv(
-    EnvClient[LintCodingAgentAction, LintCodingAgentObservation, State]
-):
-    """
-    Client for the Lint Coding Agent Environment.
-
-    This client maintains a persistent WebSocket connection to the environment server,
-    enabling efficient multi-step interactions with lower latency.
-    Each client instance has its own dedicated environment session on the server.
-
-    Example:
-        >>> # Connect to a running server
-        >>> with LintCodingAgentEnv(base_url="http://localhost:8000") as client:
-        ...     result = client.reset()
-        ...     print(result.observation.echoed_message)
-        ...
-        ...     result = client.step(LintCodingAgentAction(message="Hello!"))
-        ...     print(result.observation.echoed_message)
-
-    Example with Docker:
-        >>> # Automatically start container and connect
-        >>> client = LintCodingAgentEnv.from_docker_image("lint_coding_agent-env:latest")
-        >>> try:
-        ...     result = client.reset()
-        ...     result = client.step(LintCodingAgentAction(message="Test"))
-        ... finally:
-        ...     client.close()
-    """
-
 """Lint Coding Agent Environment Client Implementation."""
 
+import os
+import sys
 from typing import Dict, Any
+
 from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
 from openenv.core.env_server.types import State
 
+# 🚀 CRITICAL FIX: Robust Absolute/Relative Import logic
+# This ensures that whether running via 'uv run' or as a module, it finds the models.
 try:
-    from .models import LintCodingAgentAction, LintCodingAgentObservation
-except ImportError:
     from models import LintCodingAgentAction, LintCodingAgentObservation
+except ImportError:
+    try:
+        from .models import LintCodingAgentAction, LintCodingAgentObservation
+    except ImportError:
+        # Final fallback for unusual container environments
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+        from models import LintCodingAgentAction, LintCodingAgentObservation
 
 
 class LintCodingAgentEnv(
@@ -63,16 +33,17 @@ class LintCodingAgentEnv(
     """
     Lead Architect Client for the Lint Coding Agent Environment.
     
-    Supports complex state transitions within the Virtual File System (VFS)
-    and handles the specialized Pydantic models for code-based actions.
+    Maintains the persistent WebSocket/HTTP handshake with the Hugging Face Space.
+    Handles the 15-level VFS state transitions and serializes specialized 
+    Pydantic models for code-based architectural fixes.
     """
 
     def _step_payload(self, action: LintCodingAgentAction) -> Dict[str, Any]:
         """
-        Serializes the Action for the OpenEnv WebSocket/HTTP transport.
+        Serializes the Action for the OpenEnv transport layer.
         
-        Note: The 'explanation' field is vital here as the server uses it 
-        to track recursive sub-agent spawning for taxation.
+        The 'explanation' field is utilized by the server to monitor 
+        agency taxation and sub-agent spawning logic.
         """
         return {
             "code_solution": action.code_solution,
@@ -86,15 +57,15 @@ class LintCodingAgentEnv(
         """
         obs_data = payload.get("observation", {})
         
-        # Mapping the raw JSON observation to our Pydantic Model
+        # 🛡️ Defensive Mapping: Ensure no field is None to prevent Pydantic crashes
         observation = LintCodingAgentObservation(
             level=obs_data.get("level", 1),
             language=obs_data.get("language", "Python"),
-            problem_statement=obs_data.get("problem_statement", ""),
-            code_context=obs_data.get("code_context", "{}"),  # This is our VFS JSON string
+            problem_statement=obs_data.get("problem_statement", "Task initiated."),
+            code_context=obs_data.get("code_context", "{}"),  # VFS JSON string
             last_test_results=obs_data.get("last_test_results", ""),
-            reward=obs_data.get("reward", 0.0),
-            done=obs_data.get("done", False),
+            reward=payload.get("reward", 0.0), # SDK priority on top-level payload
+            done=payload.get("done", False),
             metadata=obs_data.get("metadata", {}),
         )
 
@@ -106,7 +77,7 @@ class LintCodingAgentEnv(
 
     def _parse_state(self, payload: Dict[str, Any]) -> State:
         """
-        Maintains the session integrity for persistent agent tracking.
+        Maintains session integrity for persistent agent tracking across 15 levels.
         """
         return State(
             episode_id=payload.get("episode_id"),
