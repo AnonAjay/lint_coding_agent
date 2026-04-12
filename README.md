@@ -1,4 +1,17 @@
-<div>
+---
+title: Lint Coding Agent
+emoji: 💻
+colorFrom: red
+colorTo: purple
+sdk: docker
+pinned: false
+app_port: 7860
+base_path: /v1
+tags:
+  - openenv
+  - agentic-ai
+  - python
+---
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=Lint%20Coding%20Agent&fontSize=70&animation=fadeIn&fontAlignY=35" width="100%" />
 
@@ -7,62 +20,46 @@
   <img src="https://img.shields.io/badge/Maintained%3F-yes-2ea44f?style=for-the-badge" />
   <img src="https://img.shields.io/badge/PRs-welcome-orange?style=for-the-badge&logo=github" />
 </p>
-<div>
-### ⚡ Autonomous Software Engineering Sandbox  ###
-*Training agents to navigate codebases, one level at a time.*
+
+### ⚡ Autonomous Software Engineering Sandbox
+*Training agents to navigate codebases, one level at a time through 15 stages of architectural complexity.*
 
 ---
-title: Lint Coding Agent
-emoji: 💻
-colorFrom: red
-colorTo: purple
-sdk: docker
-pinned: false
-app_port: 8000
-base_path: /web
-tags:
-  - openenv
+
+## 🛠️ System Architecture
+
+> **System Status:** `Running` 🟢 | **Sandbox:** `Docker` 🐳 | **Interface:** `FastAPI` 🚀
+
+This Space hosts the **Lint Coding Agent Environment**, a Virtual File System (VFS) based curriculum designed for evaluating Agentic AI. It exposes a standardized OpenEnv API for remote interaction.
+
+### 🌐 Key Endpoints
+- **API Documentation:** [`/v1/docs`](./v1/docs)
+- **Health Check:** [`/health`](./health)
+- **WebSocket Handshake:** [`/v1/ws`](./v1/ws)
+
 ---
 
-> **System Status:** `Running` 🟢 | **Sandbox:** `Docker` 🐳 | **Latency:** `Ultra-Low` ⚡
+## 🚀 Quick Start (Local Inference)
 
-A simple test environment that echoes back messages. Perfect for testing the env APIs as well as demonstrating environment usage patterns.
-
-## Quick Start
-
-The simplest way to use the Lint Coding Agent environment is through the `LintCodingAgentEnv` class:
+To connect your local agent to this hosted environment, use the following `inference.py` pattern:
 
 ```python
-from lint_coding_agent import LintCodingAgentAction, LintCodingAgentEnv
+from client import LintCodingAgentEnv
+from models import LintCodingAgentAction
 
-try:
-    # Create environment from Docker image
-    lint_coding_agentenv = LintCodingAgentEnv.from_docker_image("lint_coding_agent-env:latest")
+# Direct URL to this Space
+ADDRESS = "[https://anonajay-lint-coding-agent.hf.space/v1](https://anonajay-lint-coding-agent.hf.space/v1)"
 
-    # Reset
-    result = lint_coding_agentenv.reset()
-    print(f"Reset: {result.observation.echoed_message}")
-
-    # Send multiple messages
-    messages = ["Hello, World!", "Testing echo", "Final message"]
-
-    for msg in messages:
-        result = lint_coding_agentenv.step(LintCodingAgentAction(message=msg))
-        print(f"Sent: '{msg}'")
-        print(f"  → Echoed: '{result.observation.echoed_message}'")
-        print(f"  → Length: {result.observation.message_length}")
-        print(f"  → Reward: {result.reward}")
-
-finally:
-    # Always clean up
-    lint_coding_agentenv.close()
-```
-
-That's it! The `LintCodingAgentEnv.from_docker_image()` method handles:
-- Starting the Docker container
-- Waiting for the server to be ready
-- Connecting to the environment
-- Container cleanup when you call `close()`
+async def run_sprint():
+    async with LintCodingAgentEnv(base_url=ADDRESS) as env:
+        result = await env.reset()
+        print(f"Level {result.observation.level} Initialized.")
+        
+        # Action Loop
+        result = await env.step(LintCodingAgentAction(
+            code_solution="print('Architect Fix')",
+            explanation="Initial level validation"
+        ))
 
 ## Building the Docker Image
 
