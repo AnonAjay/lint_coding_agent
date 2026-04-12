@@ -1,4 +1,4 @@
-﻿---
+---
 title: Lint Coding Agent
 emoji: 💻
 colorFrom: red
@@ -10,7 +10,10 @@ base_path: /web
 tags:
   - openenv
 ---
-# Lint Coding Agent Environment
+
+# <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJueGZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3bmZ3JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/L1R1QHUR4ONa9iCCdS/giphy.gif" width="35"> Lint Coding Agent Environment
+
+> **System Status:** `Running` 🟢 | **Sandbox:** `Docker` 🐳 | **Latency:** `Ultra-Low` ⚡
 
 A simple test environment that echoes back messages. Perfect for testing the env APIs as well as demonstrating environment usage patterns.
 
