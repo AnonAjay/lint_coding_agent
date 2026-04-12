@@ -19,14 +19,9 @@ except ImportError:
 # We MUST use the injected environment variables to pass Phase 2.
 ADDRESS = "https://anonajay-lint-coding-agent.hf.space"
 API_KEY = os.environ.get("API_KEY") 
-API_BASE_URL = os.environ.get("API_BASE_URL")
+API_BASE_URL = os.environ.get("API_BASE_URL") or "https://router.huggingface.co/hf-inference/v1"
 MODEL_NAME = os.environ.get("MODEL_NAME", "gpt-4o") # Default to gpt-4o if not provided
-
-# FALLBACK FOR LOCAL TESTING ONLY (Do not hardcode these in the final push)
-if not API_KEY:
-    API_KEY = os.getenv("HF_TOKEN")
-if not API_BASE_URL:
-    API_BASE_URL = "https://router.huggingface.co/hf-inference/v1"
+API_KEY = os.getenv("HF_TOKEN")
 
 TASK_NAME = "multi-lang-lint-v1"
 BENCHMARK = "lint-coding-v1"
